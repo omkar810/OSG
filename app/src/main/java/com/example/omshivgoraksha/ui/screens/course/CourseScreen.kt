@@ -1,5 +1,8 @@
 package com.example.omshivgoraksha.ui.screens.course
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -39,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.omshivgoraksha.data.local.FileUtils
 import com.example.omshivgoraksha.data.model.course.response.CourseResponse
 import com.example.omshivgoraksha.data.model.course.request.CourseRequest
 import com.example.omshivgoraksha.ui.components.UserRole
@@ -48,6 +54,8 @@ import com.example.omshivgoraksha.ui.theme.GoldPrimary
 import com.example.omshivgoraksha.ui.theme.TextSecondary
 import com.example.omshivgoraksha.data.model.course.viewmodel.CourseUiState
 import com.example.omshivgoraksha.data.model.course.viewmodel.CourseViewModel
+import java.io.File
+import kotlin.collections.mapNotNull
 
 @Composable
 fun CourseScreen(
@@ -221,7 +229,7 @@ fun CourseScreen(
                             items(
                                 items = state.courses,
                                 key = { course ->
-                                    course.id ?: 0L
+                                    course.courseId ?: 0L
                                 }
                             ) { course ->
 
@@ -263,13 +271,18 @@ fun CourseScreen(
                 showCourseDialog = false
             },
 
-            onSave = { request ->
+            onSave = { request, documentFiles ->
 
                 if (selectedCourse == null) {
 
                     viewModel.createCourse(
+
                         request = request,
+
+                        documentFiles = documentFiles,
+
                         onSuccess = {
+
                             showCourseDialog = false
                         }
                     )
@@ -277,9 +290,16 @@ fun CourseScreen(
                 } else {
 
                     viewModel.updateCourse(
-                        id = selectedCourse!!.id!!,
+
+                        id =
+                            selectedCourse!!.courseId!!,
+
                         request = request,
+
+                        documentFiles = documentFiles,
+
                         onSuccess = {
+
                             showCourseDialog = false
                         }
                     )
@@ -318,7 +338,7 @@ fun CourseScreen(
                 TextButton(
                     onClick = {
 
-                        selectedCourse!!.id?.let { id ->
+                        selectedCourse!!.courseId?.let { id ->
 
                             viewModel.deleteCourse(
                                 id = id,
@@ -479,20 +499,232 @@ private fun CourseCard(
 private fun CourseFormDialog(
     course: CourseResponse?,
     onDismiss: () -> Unit,
-    onSave: (CourseRequest) -> Unit
+    onSave: (
+        CourseRequest,
+        List<File>
+    ) -> Unit
 ) {
 
-    var name by remember {
-        mutableStateOf(course?.courseName ?: "")
+    val context =
+        androidx.compose.ui.platform.LocalContext.current
+
+    // =========================================================
+    // FORM VALUES
+    // =========================================================
+
+    var courseName by remember {
+        mutableStateOf(
+            course?.courseName ?: ""
+        )
     }
 
-    var description by remember {
-        mutableStateOf(course?.description ?: "")
+    var thumbnail by remember {
+        mutableStateOf(
+            course?.thumbnail ?: ""
+        )
     }
 
     var duration by remember {
-        mutableStateOf(course?.duration ?: "")
+        mutableStateOf(
+            course?.duration ?: ""
+        )
     }
+
+    var description by remember {
+        mutableStateOf(
+            course?.description ?: ""
+        )
+    }
+
+    var price by remember {
+        mutableStateOf(
+            course?.price?.toString() ?: ""
+        )
+    }
+
+    var points by remember {
+
+        mutableStateOf(
+            course?.points
+                ?.joinToString(", ")
+                ?: ""
+        )
+    }
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    var courseNameError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var thumbnailError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var durationError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var descriptionError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var priceError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var pointsError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    // =========================================================
+    // SELECTED DOCUMENTS
+    // =========================================================
+
+    var selectedUris by remember {
+        mutableStateOf<List<Uri>>(
+            emptyList()
+        )
+    }
+
+    // =========================================================
+    // DOCUMENT PICKER
+    // =========================================================
+
+    val documentPicker =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts.OpenMultipleDocuments()
+        ) { uris ->
+
+            selectedUris = uris
+        }
+
+
+    // =========================================================
+    // VALIDATION FUNCTION
+    // =========================================================
+
+    fun validateForm(): Boolean {
+
+        var isValid = true
+
+        // Course Name
+
+        courseNameError = when {
+
+            courseName.isBlank() ->
+                "Course name is required."
+
+            courseName.trim().length < 2 ->
+                "Course name must contain at least 2 characters."
+
+            else ->
+                null
+        }
+
+        if (courseNameError != null) {
+            isValid = false
+        }
+
+
+        // Thumbnail
+
+        thumbnailError = when {
+
+            thumbnail.isBlank() ->
+                "Thumbnail is required."
+
+            else ->
+                null
+        }
+
+        if (thumbnailError != null) {
+            isValid = false
+        }
+
+
+        // Duration
+
+        durationError = when {
+
+            duration.isBlank() ->
+                "Duration is required."
+
+            else ->
+                null
+        }
+
+        if (durationError != null) {
+            isValid = false
+        }
+
+
+        // Description
+
+        descriptionError = when {
+
+            description.isBlank() ->
+                "Description is required."
+
+            description.trim().length < 10 ->
+                "Description must contain at least 10 characters."
+
+            else ->
+                null
+        }
+
+        if (descriptionError != null) {
+            isValid = false
+        }
+
+
+        // Price
+
+        priceError = when {
+
+            price.isBlank() ->
+                "Price is required."
+
+            price.toDoubleOrNull() == null ->
+                "Enter a valid price."
+
+            price.toDouble() < 0 ->
+                "Price cannot be negative."
+
+            else ->
+                null
+        }
+
+        if (priceError != null) {
+            isValid = false
+        }
+
+
+        // Points
+
+        pointsError = when {
+
+            points.isBlank() ->
+                "At least one point is required."
+
+            else ->
+                null
+        }
+
+        if (pointsError != null) {
+            isValid = false
+        }
+
+        return isValid
+    }
+
+
+    // =========================================================
+    // DIALOG
+    // =========================================================
 
     AlertDialog(
 
@@ -501,11 +733,12 @@ private fun CourseFormDialog(
         title = {
 
             Text(
-                text = if (course == null) {
-                    "Add Course"
-                } else {
-                    "Edit Course"
-                },
+                text =
+                    if (course == null)
+                        "Add Course"
+                    else
+                        "Edit Course",
+
                 color = GoldDark
             )
         },
@@ -513,77 +746,386 @@ private fun CourseFormDialog(
         text = {
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        rememberScrollState()
+                    ),
+
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
 
+                // =================================================
+                // COURSE NAME
+                // =================================================
+
                 OutlinedTextField(
-                    value = name,
+
+                    value = courseName,
+
                     onValueChange = {
-                        name = it
+
+                        courseName = it
+                        courseNameError = null
                     },
+
                     label = {
                         Text("Course Name")
                     },
+
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        courseNameError != null,
+
+                    supportingText = {
+
+                        courseNameError?.let {
+
+                            Text(it)
+                        }
+                    }
                 )
 
 
+                // =================================================
+                // THUMBNAIL
+                // =================================================
+
                 OutlinedTextField(
-                    value = description,
+
+                    value = thumbnail,
+
                     onValueChange = {
-                        description = it
+
+                        thumbnail = it
+                        thumbnailError = null
                     },
+
                     label = {
-                        Text("Description")
+                        Text("Thumbnail")
                     },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth()
+
+                    singleLine = true,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        thumbnailError != null,
+
+                    supportingText = {
+
+                        thumbnailError?.let {
+
+                            Text(it)
+                        }
+                    }
                 )
 
 
+                // =================================================
+                // DURATION
+                // =================================================
+
                 OutlinedTextField(
+
                     value = duration,
+
                     onValueChange = {
+
                         duration = it
+                        durationError = null
                     },
+
                     label = {
                         Text("Duration")
                     },
+
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        durationError != null,
+
+                    supportingText = {
+
+                        durationError?.let {
+
+                            Text(it)
+                        }
+                    }
                 )
+
+
+                // =================================================
+                // DESCRIPTION
+                // =================================================
+
+                OutlinedTextField(
+
+                    value = description,
+
+                    onValueChange = {
+
+                        description = it
+                        descriptionError = null
+                    },
+
+                    label = {
+                        Text("Description")
+                    },
+
+                    minLines = 3,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        descriptionError != null,
+
+                    supportingText = {
+
+                        descriptionError?.let {
+
+                            Text(it)
+                        }
+                    }
+                )
+
+
+                // =================================================
+                // PRICE
+                // =================================================
+
+                OutlinedTextField(
+
+                    value = price,
+
+                    onValueChange = {
+
+                        if (
+                            it.isEmpty() ||
+                            it.matches(
+                                Regex(
+                                    "^\\d*(\\.\\d{0,2})?$"
+                                )
+                            )
+                        ) {
+
+                            price = it
+                            priceError = null
+                        }
+                    },
+
+                    label = {
+                        Text("Price")
+                    },
+
+                    singleLine = true,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        priceError != null,
+
+                    supportingText = {
+
+                        priceError?.let {
+
+                            Text(it)
+                        }
+                    }
+                )
+
+
+                // =================================================
+                // POINTS
+                // =================================================
+
+                OutlinedTextField(
+
+                    value = points,
+
+                    onValueChange = {
+
+                        points = it
+                        pointsError = null
+                    },
+
+                    label = {
+                        Text(
+                            "Points (comma separated)"
+                        )
+                    },
+
+                    placeholder = {
+                        Text(
+                            "Example: Good, Easy, Beginner"
+                        )
+                    },
+
+                    minLines = 2,
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    isError =
+                        pointsError != null,
+
+                    supportingText = {
+
+                        pointsError?.let {
+
+                            Text(it)
+                        }
+                    }
+                )
+
+
+                // =================================================
+                // DOCUMENTS
+                // =================================================
+
+                Spacer(
+                    modifier =
+                        Modifier.height(4.dp)
+                )
+
+                Button(
+
+                    onClick = {
+
+                        documentPicker.launch(
+                            arrayOf(
+                                "application/pdf",
+                                "application/msword",
+                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                "application/vnd.ms-excel",
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                "text/plain"
+                            )
+                        )
+                    },
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                GoldPrimary
+                        )
+                ) {
+
+                    Text(
+                        text =
+                            "SELECT DOCUMENTS"
+                    )
+                }
+
+
+                // =================================================
+                // SELECTED DOCUMENT COUNT
+                // =================================================
+
+                if (
+                    selectedUris.isNotEmpty()
+                ) {
+
+                    Text(
+                        text =
+                            "${selectedUris.size} document(s) selected",
+
+                        style =
+                            MaterialTheme.typography.bodyMedium,
+
+                        color = GoldDark
+                    )
+                }
             }
         },
+
+        // =========================================================
+        // CREATE / UPDATE
+        // =========================================================
 
         confirmButton = {
 
             TextButton(
+
                 onClick = {
 
-                    if (name.isNotBlank()) {
-
-                        onSave(
-                            CourseRequest(
-                                courseName = name.trim(),
-                                description = description.trim(),
-                                duration = duration.trim()
-                            )
-                        )
+                    if (!validateForm()) {
+                        return@TextButton
                     }
+
+                    val pointList =
+                        points
+                            .split(",")
+                            .map {
+                                it.trim()
+                            }
+                            .filter {
+                                it.isNotBlank()
+                            }
+
+                    val documentFiles =
+                        selectedUris.mapNotNull { uri ->
+                            FileUtils.uriToFile(
+                                context,
+                                uri
+                            )
+                        }
+
+                    val request =
+                        CourseRequest(
+
+                            courseName =
+                                courseName.trim(),
+
+                            thumbnail =
+                                thumbnail.trim(),
+
+                            duration =
+                                duration.trim(),
+
+                            description =
+                                description.trim(),
+
+                            price =
+                                price.toDouble(),
+
+                            points =
+                                pointList
+                        )
+
+                    onSave(
+                        request,
+                        documentFiles
+                    )
                 }
             ) {
 
                 Text(
-                    text = if (course == null) {
-                        "Create"
-                    } else {
-                        "Update"
-                    },
+                    text =
+                        if (course == null)
+                            "Create"
+                        else
+                            "Update",
+
                     color = GoldDark
                 )
             }
         },
+
+        // =========================================================
+        // CANCEL
+        // =========================================================
 
         dismissButton = {
 
@@ -591,9 +1133,7 @@ private fun CourseFormDialog(
                 onClick = onDismiss
             ) {
 
-                Text(
-                    text = "Cancel"
-                )
+                Text("Cancel")
             }
         }
     )

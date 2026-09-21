@@ -2,7 +2,7 @@ package com.example.omshivgoraksha.data.model.course.response
 
 data class CourseResponse(
 
-    val id: Long? = null,
+    val courseId: Long? = null,
 
     val courseName: String? = null,
 
