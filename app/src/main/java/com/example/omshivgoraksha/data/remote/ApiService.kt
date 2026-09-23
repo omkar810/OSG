@@ -3,6 +3,7 @@ package com.example.omshivgoraksha.data.remote
 import com.example.omshivgoraksha.data.model.auth.SignupRequest
 import com.example.omshivgoraksha.data.model.course.request.CourseRequest
 import com.example.omshivgoraksha.data.model.course.response.CourseResponse
+import com.example.omshivgoraksha.data.model.lesson.response.LessonResponse
 import com.example.omshivgoraksha.data.model.login.LoginRequest
 import com.example.omshivgoraksha.data.model.login.LoginResponse
 import okhttp3.MultipartBody
@@ -76,7 +77,7 @@ interface ApiService {
     suspend fun updateCourse(
 
         @Path("id")
-        id: Long,
+        courseId: Long,
 
         @Part("courseName")
         courseName: RequestBody,
@@ -101,14 +102,77 @@ interface ApiService {
     ): Response<CourseResponse>
 
 
-    @PUT("api/courses/{id}")
-    suspend fun updateCourse(
-        @Path("id") id: Long,
-        @Body request: CourseRequest
-    ): Response<CourseResponse>
+//    @PUT("api/courses/{id}")
+//    suspend fun updateCourse(
+//        @Path("id") id: Long,
+//        @Body request: CourseRequest
+//    ): Response<CourseResponse>
 
     @DELETE("api/courses/{id}")
     suspend fun deleteCourse(
         @Path("id") id: Long
+    ): Response<Unit>
+
+    @GET("api/lessons/course/{courseId}")
+    suspend fun getLessonsByCourse(
+        @Path("courseId") courseId: Long
+    ): Response<List<LessonResponse>>
+
+    @Multipart
+    @POST("api/lessons")
+    suspend fun createLesson(
+
+        @Part("lessonName")
+        lessonName: RequestBody,
+
+        @Part("thumbnail")
+        thumbnail: RequestBody,
+
+        @Part("duration")
+        duration: RequestBody,
+
+        @Part("description")
+        description: RequestBody,
+
+        @Part documents: List<MultipartBody.Part>,
+
+        @Part videoName: MultipartBody.Part,
+
+        @Part("courseId")
+        courseId: RequestBody
+
+    ): Response<LessonResponse>
+
+    @Multipart
+    @PUT("api/lessons/{lessonId}")
+    suspend fun updateLesson(
+
+        @Path("lessonId")
+        lessonId: Long,
+
+        @Part("lessonName")
+        lessonName: RequestBody,
+
+        @Part("thumbnail")
+        thumbnail: RequestBody,
+
+        @Part("duration")
+        duration: RequestBody,
+
+        @Part("description")
+        description: RequestBody,
+
+        @Part documents: List<MultipartBody.Part>,
+
+        @Part videoName: MultipartBody.Part,
+
+        @Part("courseId")
+        courseId: RequestBody
+
+    ): Response<LessonResponse>
+
+    @DELETE("api/lessons/{lessonId}")
+    suspend fun deleteLesson(
+        @Path("lessonId") lessonId: Long
     ): Response<Unit>
 }

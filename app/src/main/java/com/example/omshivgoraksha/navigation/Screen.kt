@@ -11,4 +11,15 @@ sealed class Screen(
         data object ForgotPassword : Screen("forgot_password")
 
         data object Home : Screen("home")
+
+        data object Lessons :
+                Screen("lessons/{courseId}") {
+
+                fun createRoute(
+                        courseId: Long
+                ): String {
+
+                        return "lessons/$courseId"
+                }
+        }
 }

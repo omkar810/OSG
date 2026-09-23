@@ -12,10 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.omshivgoraksha.data.local.TokenManager
 import com.example.omshivgoraksha.data.model.auth.AuthState
 import com.example.omshivgoraksha.data.model.auth.AuthViewModel
@@ -25,6 +27,7 @@ import com.example.omshivgoraksha.ui.screens.auth.LoginScreen
 import com.example.omshivgoraksha.ui.screens.auth.SignupScreen
 import com.example.omshivgoraksha.ui.screens.course.CourseScreen
 import com.example.omshivgoraksha.ui.screens.home.HomeScreen
+import com.example.omshivgoraksha.ui.screens.lesson.LessonScreen
 
 @Composable
 fun AppNavigation() {
@@ -211,6 +214,40 @@ fun AppNavigation() {
 
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+
+        // =========================
+        // LESSON SCREEN
+        // =========================
+
+        composable(
+            route = Screen.Lessons.route,
+
+            arguments = listOf(
+                navArgument("courseId") {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+
+            val courseId =
+                backStackEntry
+                    .arguments
+                    ?.getLong("courseId")
+                    ?: return@composable
+
+            LessonScreen(
+                courseId = courseId,
+                onNavigate = { route ->
+                    navController.navigate(route)
+                },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onLogout = {
+                    // existing logout
                 }
             )
         }

@@ -3,6 +3,7 @@ package com.example.omshivgoraksha.ui.screens.course
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,7 @@ import com.example.omshivgoraksha.ui.theme.GoldPrimary
 import com.example.omshivgoraksha.ui.theme.TextSecondary
 import com.example.omshivgoraksha.data.model.course.viewmodel.CourseUiState
 import com.example.omshivgoraksha.data.model.course.viewmodel.CourseViewModel
+import com.example.omshivgoraksha.navigation.Screen
 import java.io.File
 import kotlin.collections.mapNotNull
 
@@ -235,7 +237,15 @@ fun CourseScreen(
 
                                 CourseCard(
                                     course = course,
+                                    onClick = {
 
+                                        course.courseId?.let { courseId ->
+
+                                            onNavigate(
+                                                Screen.Lessons.createRoute(courseId)
+                                            )
+                                        }
+                                    },
                                     onEdit = {
 
                                         selectedCourse = course
@@ -384,16 +394,22 @@ fun CourseScreen(
 private fun CourseCard(
     course: CourseResponse,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onClick: () -> Unit?
 ) {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            },
 
         shape = RoundedCornerShape(16.dp),
 
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
 
         elevation = CardDefaults.cardElevation(
@@ -1098,7 +1114,7 @@ private fun CourseFormDialog(
                                 description.trim(),
 
                             price =
-                                price.toDouble(),
+                                price.toLong(),
 
                             points =
                                 pointList

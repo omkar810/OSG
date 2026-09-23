@@ -5,6 +5,6 @@ data class CourseRequest(
     val thumbnail: String,
     val duration: String,
     val description: String,
-    val price: Double,
+    val price: Long,
     val points: List<String>
 )

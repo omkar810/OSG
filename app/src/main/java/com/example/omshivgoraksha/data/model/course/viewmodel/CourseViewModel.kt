@@ -1,11 +1,14 @@
 package com.example.omshivgoraksha.data.model.course.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.omshivgoraksha.data.model.course.request.CourseRequest
 import com.example.omshivgoraksha.data.model.course.response.CourseResponse
+import com.example.omshivgoraksha.data.model.lesson.viewmodel.LessonViewModel
 import com.example.omshivgoraksha.data.remote.RetrofitClient
 import com.example.omshivgoraksha.data.repository.CourseRepository
+import com.example.omshivgoraksha.data.repository.LessonRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -183,5 +186,32 @@ class CourseViewModel : ViewModel() {
                         )
                 }
         }
+    }
+}
+
+class LessonViewModelFactory(
+    private val repository: LessonRepository
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
+        if (
+            modelClass.isAssignableFrom(
+                LessonViewModel::class.java
+            )
+        ) {
+
+            @Suppress("UNCHECKED_CAST")
+
+            return LessonViewModel(
+                repository
+            ) as T
+        }
+
+        throw IllegalArgumentException(
+            "Unknown ViewModel class"
+        )
     }
 }

@@ -106,7 +106,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     private const val BASE_URL =
-        "http://31.220.76.155:2026/"
+        "http://192.168.1.15:2026/"
 
     private lateinit var tokenManager: TokenManager
 
